@@ -1,0 +1,27 @@
+database:
+  type: sqlite  # Options: postgresql, sqlite
+  host: localhost
+  port: 5432
+  user: postgres
+  password: ""
+  name: ipcontroller
+
+security:
+  jwt:
+    secret_key: "your-secret-key-change-this-in-production"
+    algorithm: "HS256"
+    access_token_expire_minutes: 15
+    refresh_token_expire_days: 7
+  encryption:
+    key: "your-encryption-key-32-bytes-long"
+
+server:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+    - "http://localhost:3001"
+
+rate_limit:
+  requests_per_minute: 100
