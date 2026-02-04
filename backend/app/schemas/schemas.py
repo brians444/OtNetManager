@@ -424,3 +424,89 @@ class QuickAddDeviceRequest(BaseModel):
   asset_type: Optional[int] = None
   network_level: Optional[int] = None
 
+# Switch Schemas
+class SwitchBase(BaseModel):
+  name: str = Field(..., min_length=1, max_length=100)
+  ip_address: Optional[str] = Field(None, max_length=45)
+  model: Optional[str] = Field(None, max_length=100)
+  location_id: Optional[int] = None
+  description: Optional[str] = None
+
+class SwitchCreate(SwitchBase):
+  pass
+
+class SwitchUpdate(BaseModel):
+  name: Optional[str] = Field(None, min_length=1, max_length=100)
+  ip_address: Optional[str] = Field(None, max_length=45)
+  model: Optional[str] = Field(None, max_length=100)
+  location_id: Optional[int] = None
+  description: Optional[str] = None
+
+class SwitchResponse(SwitchBase):
+  id: int
+  created_at: datetime
+  location_name: Optional[str] = None
+  ports_count: int = 0
+
+  class Config:
+    from_attributes = True
+
+# VLAN Schemas
+class VlanBase(BaseModel):
+  vlan_number: int = Field(..., ge=1, le=4094)
+  name: str = Field(..., min_length=1, max_length=100)
+  subnet_id: Optional[int] = None
+  description: Optional[str] = None
+
+class VlanCreate(VlanBase):
+  pass
+
+class VlanUpdate(BaseModel):
+  vlan_number: Optional[int] = Field(None, ge=1, le=4094)
+  name: Optional[str] = Field(None, min_length=1, max_length=100)
+  subnet_id: Optional[int] = None
+  description: Optional[str] = None
+
+class VlanResponse(VlanBase):
+  id: int
+  created_at: datetime
+  subnet_name: Optional[str] = None
+
+  class Config:
+    from_attributes = True
+
+# SwitchPort Schemas
+class SwitchPortBase(BaseModel):
+  switch_id: int
+  port_number: str = Field(..., min_length=1, max_length=50)
+  vlan_id: Optional[int] = None
+  device_id: Optional[int] = None
+  description: Optional[str] = None
+
+class SwitchPortCreate(BaseModel):
+  port_number: str = Field(..., min_length=1, max_length=50)
+  vlan_id: Optional[int] = None
+  device_id: Optional[int] = None
+  description: Optional[str] = None
+
+class SwitchPortUpdate(BaseModel):
+  port_number: Optional[str] = Field(None, min_length=1, max_length=50)
+  vlan_id: Optional[int] = None
+  device_id: Optional[int] = None
+  description: Optional[str] = None
+
+class SwitchPortResponse(BaseModel):
+  id: int
+  switch_id: int
+  port_number: str
+  vlan_id: Optional[int] = None
+  device_id: Optional[int] = None
+  description: Optional[str] = None
+  created_at: datetime
+  switch_name: Optional[str] = None
+  vlan_name: Optional[str] = None
+  device_name: Optional[str] = None
+
+  class Config:
+    from_attributes = True
+

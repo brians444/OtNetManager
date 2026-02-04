@@ -5,7 +5,7 @@ import time
 
 from .core.config import settings
 from .core.database import engine
-from .api import auth, devices, asset_types, network_levels, subnets, config, import_export, locations, audit, network_scan, roles
+from .api import auth, devices, asset_types, network_levels, subnets, config, import_export, locations, audit, network_scan, roles, switches, vlans
 from .middleware.audit import AuditMiddleware
 
 app = FastAPI(
@@ -49,6 +49,8 @@ app.include_router(locations.router, prefix="/api/locations", tags=["locations"]
 app.include_router(audit.router, prefix="/api/audit", tags=["audit"])
 app.include_router(network_scan.router, prefix="/api/network", tags=["network-scan"])
 app.include_router(roles.router, prefix="/api/roles", tags=["roles"])
+app.include_router(switches.router, prefix="/api/switches", tags=["switches"])
+app.include_router(vlans.router, prefix="/api/vlans", tags=["vlans"])
 
 @app.get("/")
 def root():

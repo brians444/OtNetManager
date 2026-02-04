@@ -115,3 +115,50 @@ class Credential(Base):
   description = Column(String(200))
   created_at = Column(DateTime, server_default=func.now())
   updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+class Switch(Base):
+  __tablename__ = "switches"
+
+  id = Column(Integer, primary_key=True, index=True)
+  name = Column(String(100), nullable=False)
+  ip_address = Column(String(45), index=True)
+  model = Column(String(100))
+  location_id = Column(Integer, ForeignKey("locations.id", ondelete="SET NULL"))
+  description = Column(String(500))
+  created_at = Column(DateTime, server_default=func.now())
+  updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+  # Relationships
+  location_rel = relationship("Location", backref="switches")
+  ports = relationship("SwitchPort", back_populates="switch_rel", cascade="all, delete-orphan")
+
+class Vlan(Base):
+  __tablename__ = "vlans"
+
+  id = Column(Integer, primary_key=True, index=True)
+  vlan_number = Column(Integer, nullable=False)
+  name = Column(String(100), nullable=False)
+  subnet_id = Column(Integer, ForeignKey("subnets.id", ondelete="SET NULL"))
+  description = Column(String(500))
+  created_at = Column(DateTime, server_default=func.now())
+  updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+  # Relationships
+  subnet_rel = relationship("Subnet", backref="vlans")
+
+class SwitchPort(Base):
+  __tablename__ = "switch_ports"
+
+  id = Column(Integer, primary_key=True, index=True)
+  switch_id = Column(Integer, ForeignKey("switches.id", ondelete="CASCADE"), nullable=False)
+  port_number = Column(String(50), nullable=False)
+  vlan_id = Column(Integer, ForeignKey("vlans.id", ondelete="SET NULL"))
+  device_id = Column(Integer, ForeignKey("devices.id", ondelete="SET NULL"))
+  description = Column(String(500))
+  created_at = Column(DateTime, server_default=func.now())
+  updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+  # Relationships
+  switch_rel = relationship("Switch", back_populates="ports")
+  vlan_rel = relationship("Vlan", backref="switch_ports")
+  device_rel = relationship("Device", backref="switch_ports")

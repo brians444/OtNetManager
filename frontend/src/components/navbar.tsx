@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Globe, Home, Server, Network, Layers, Users, LogOut, Settings, Upload, MapPin, User, ChevronDown, Shield, Radar, KeyRound } from "lucide-react";
+import { Globe, Home, Server, Network, Layers, Users, LogOut, Settings, Upload, MapPin, User, ChevronDown, Shield, Radar, KeyRound, Cable } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authService } from "@/lib/services";
 
@@ -76,51 +76,25 @@ export function Navbar() {
                     Niveles
                   </Button>
                 </Link>
-                <Link href="/users">
-                  <Button variant={pathname === "/users" ? "default" : "ghost"} size="sm">
-                    <Users className="h-4 w-4 mr-2" />
-                    Usuarios
-                  </Button>
-                </Link>
                 <Link href="/locations-sectors">
                   <Button variant={pathname === "/locations-sectors" ? "default" : "ghost"} size="sm">
                     <MapPin className="h-4 w-4 mr-2" />
                     Ubicaciones
                   </Button>
                 </Link>
-                <Link href="/import-export">
-                  <Button variant={pathname === "/import-export" ? "default" : "ghost"} size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import/Export
-                  </Button>
-                </Link>
-                <Link href="/configuration">
-                  <Button variant={pathname === "/configuration" ? "default" : "ghost"} size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Configuración
+                <Link href="/switches-vlans">
+                  <Button variant={pathname === "/switches-vlans" ? "default" : "ghost"} size="sm">
+                    <Cable className="h-4 w-4 mr-2" />
+                    Switches/VLANs
                   </Button>
                 </Link>
                 {currentUser?.is_admin && (
-                  <>
-                    <Link href="/network-scan">
-                      <Button variant={pathname === "/network-scan" ? "default" : "ghost"} size="sm">
-                        <Radar className="h-4 w-4 mr-2" />
-                        Escaneo
-                      </Button>
-                    </Link>
-                    <Link href="/roles">
-                      <Button variant={pathname === "/roles" ? "default" : "ghost"} size="sm">
-                        <KeyRound className="h-4 w-4 mr-2" />
-                        Roles
-                      </Button>
-                    </Link>
-                    <Link href="/audit">
-                      <Button variant={pathname === "/audit" ? "default" : "ghost"} size="sm">
-                        <Shield className="h-4 w-4 mr-2" />
-                        Auditoría
-                      </Button>
-                    </Link>
-                  </>
+                  <Link href="/network-scan">
+                    <Button variant={pathname === "/network-scan" ? "default" : "ghost"} size="sm">
+                      <Radar className="h-4 w-4 mr-2" />
+                      Escaneo
+                    </Button>
+                  </Link>
                 )}
               </div>
             )}
@@ -147,6 +121,33 @@ export function Navbar() {
                     <p className="text-xs text-muted-foreground">{currentUser.email}</p>
                     {currentUser.is_admin && (
                       <p className="text-xs text-primary mt-1">Administrador</p>
+                    )}
+                  </div>
+                  <div className="py-1 border-b">
+                    <p className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Administración</p>
+                    <Link href="/users" onClick={() => setShowUserMenu(false)} className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Usuarios
+                    </Link>
+                    <Link href="/import-export" onClick={() => setShowUserMenu(false)} className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Import/Export
+                    </Link>
+                    <Link href="/configuration" onClick={() => setShowUserMenu(false)} className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Configuración
+                    </Link>
+                    {currentUser.is_admin && (
+                      <>
+                        <Link href="/roles" onClick={() => setShowUserMenu(false)} className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2">
+                          <KeyRound className="h-4 w-4" />
+                          Roles
+                        </Link>
+                        <Link href="/audit" onClick={() => setShowUserMenu(false)} className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Auditoría
+                        </Link>
+                      </>
                     )}
                   </div>
                   <button

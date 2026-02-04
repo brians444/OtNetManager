@@ -1,5 +1,5 @@
 import api from "./api";
-import { User, Token, Device, DeviceCreate, DeviceUpdate, CredentialCreate, CredentialUpdate, Credential, AssetType, NetworkLevel, Subnet, SubnetCreate, SubnetUpdate, Location, LocationCreate, LocationUpdate, Sector, SectorCreate, SectorUpdate, DatabaseConfigResponse, DatabaseConfigUpdate, ConnectionTest, ImportPreview, ImportResponse, ExportResponse, AuditLog, SubnetIPInfo, FreeIP, IPValidationResponse, DevicePingResult, NetworkScanResponse, QuickAddDeviceRequest, Permission, Role, RoleCreate, RoleUpdate, UserWithRoles, UserPermissions, MyPermissions } from "@/types";
+import { User, Token, Device, DeviceCreate, DeviceUpdate, CredentialCreate, CredentialUpdate, Credential, AssetType, NetworkLevel, Subnet, SubnetCreate, SubnetUpdate, Location, LocationCreate, LocationUpdate, Sector, SectorCreate, SectorUpdate, DatabaseConfigResponse, DatabaseConfigUpdate, ConnectionTest, ImportPreview, ImportResponse, ExportResponse, AuditLog, SubnetIPInfo, FreeIP, IPValidationResponse, DevicePingResult, NetworkScanResponse, QuickAddDeviceRequest, Permission, Role, RoleCreate, RoleUpdate, UserWithRoles, UserPermissions, MyPermissions, Switch, SwitchCreate, SwitchUpdate, Vlan, VlanCreate, VlanUpdate, SwitchPort, SwitchPortCreate, SwitchPortUpdate } from "@/types";
 
 export const authService = {
   register: async (username: string, email: string, password: string, is_admin: boolean = false) => {
@@ -455,5 +455,80 @@ export const roleService = {
   getMyPermissions: async () => {
     const response = await api.get<MyPermissions>("/api/roles/me/permissions");
     return response.data;
+  },
+};
+
+export const switchService = {
+  getSwitches: async (skip = 0, limit = 100) => {
+    const response = await api.get<Switch[]>("/api/switches", {
+      params: { skip, limit },
+    });
+    return response.data;
+  },
+
+  getSwitch: async (id: number) => {
+    const response = await api.get<Switch>(`/api/switches/${id}`);
+    return response.data;
+  },
+
+  createSwitch: async (data: SwitchCreate) => {
+    const response = await api.post<Switch>("/api/switches", data);
+    return response.data;
+  },
+
+  updateSwitch: async (id: number, data: SwitchUpdate) => {
+    const response = await api.put<Switch>(`/api/switches/${id}`, data);
+    return response.data;
+  },
+
+  deleteSwitch: async (id: number) => {
+    await api.delete(`/api/switches/${id}`);
+  },
+
+  getSwitchPorts: async (switchId: number) => {
+    const response = await api.get<SwitchPort[]>(`/api/switches/${switchId}/ports`);
+    return response.data;
+  },
+
+  createSwitchPort: async (switchId: number, data: SwitchPortCreate) => {
+    const response = await api.post<SwitchPort>(`/api/switches/${switchId}/ports`, data);
+    return response.data;
+  },
+
+  updateSwitchPort: async (portId: number, data: SwitchPortUpdate) => {
+    const response = await api.put<SwitchPort>(`/api/switches/ports/${portId}`, data);
+    return response.data;
+  },
+
+  deleteSwitchPort: async (portId: number) => {
+    await api.delete(`/api/switches/ports/${portId}`);
+  },
+};
+
+export const vlanService = {
+  getVlans: async (skip = 0, limit = 100) => {
+    const response = await api.get<Vlan[]>("/api/vlans", {
+      params: { skip, limit },
+    });
+    return response.data;
+  },
+
+  getVlan: async (id: number) => {
+    const response = await api.get<Vlan>(`/api/vlans/${id}`);
+    return response.data;
+  },
+
+  createVlan: async (data: VlanCreate) => {
+    const response = await api.post<Vlan>("/api/vlans", data);
+    return response.data;
+  },
+
+  updateVlan: async (id: number, data: VlanUpdate) => {
+    const response = await api.put<Vlan>(`/api/vlans/${id}`, data);
+    return response.data;
+  },
+
+  deleteVlan: async (id: number) => {
+    await api.delete(`/api/vlans/${id}`);
   },
 };

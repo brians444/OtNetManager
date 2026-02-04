@@ -391,3 +391,85 @@ export interface MyPermissions {
   is_admin: boolean;
   permissions: string[];
 }
+
+// Switch Types
+export interface Switch {
+  id: number;
+  name: string;
+  ip_address: string | null;
+  model: string | null;
+  location_id: number | null;
+  description: string | null;
+  created_at: string;
+  location_name: string | null;
+  ports_count: number;
+}
+
+export interface SwitchCreate {
+  name: string;
+  ip_address?: string | null;
+  model?: string | null;
+  location_id?: number | null;
+  description?: string | null;
+}
+
+export interface SwitchUpdate {
+  name?: string;
+  ip_address?: string | null;
+  model?: string | null;
+  location_id?: number | null;
+  description?: string | null;
+}
+
+// VLAN Types
+export interface Vlan {
+  id: number;
+  vlan_number: number;
+  name: string;
+  subnet_id: number | null;
+  description: string | null;
+  created_at: string;
+  subnet_name: string | null;
+}
+
+export interface VlanCreate {
+  vlan_number: number;
+  name: string;
+  subnet_id?: number | null;
+  description?: string | null;
+}
+
+export interface VlanUpdate {
+  vlan_number?: number;
+  name?: string;
+  subnet_id?: number | null;
+  description?: string | null;
+}
+
+// SwitchPort Types
+export interface SwitchPort {
+  id: number;
+  switch_id: number;
+  port_number: string;
+  vlan_id: number | null;
+  device_id: number | null;
+  description: string | null;
+  created_at: string;
+  switch_name: string | null;
+  vlan_name: string | null;
+  device_name: string | null;
+}
+
+export interface SwitchPortCreate {
+  port_number: string;
+  vlan_id?: number | null;
+  device_id?: number | null;
+  description?: string | null;
+}
+
+export interface SwitchPortUpdate {
+  port_number?: string;
+  vlan_id?: number | null;
+  device_id?: number | null;
+  description?: string | null;
+}

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from ..models.user import User, Device, Credential, AssetType, NetworkLevel, Subnet, Location, Sector
+from ..models.user import User, Device, Credential, AssetType, NetworkLevel, Subnet, Location, Sector, Switch, Vlan, SwitchPort
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
   return db.query(User).filter(User.id == user_id).first()
@@ -219,6 +219,108 @@ def delete_sector(db: Session, sector_id: int) -> bool:
   db_sector = get_sector(db, sector_id=sector_id)
   if db_sector:
     db.delete(db_sector)
+    db.commit()
+    return True
+  return False
+
+# ========== SWITCHES ==========
+
+def get_switches(db: Session, skip: int = 0, limit: int = 100) -> List[Switch]:
+  return db.query(Switch).offset(skip).limit(limit).all()
+
+def get_switch(db: Session, switch_id: int) -> Optional[Switch]:
+  return db.query(Switch).filter(Switch.id == switch_id).first()
+
+def create_switch(db: Session, switch):
+  db_switch = Switch(**switch.model_dump())
+  db.add(db_switch)
+  db.commit()
+  db.refresh(db_switch)
+  return db_switch
+
+def update_switch(db: Session, switch_id: int, switch):
+  db_switch = get_switch(db, switch_id=switch_id)
+  if db_switch:
+    update_data = switch.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+      setattr(db_switch, field, value)
+    db.commit()
+    db.refresh(db_switch)
+  return db_switch
+
+def delete_switch(db: Session, switch_id: int) -> bool:
+  db_switch = get_switch(db, switch_id=switch_id)
+  if db_switch:
+    db.delete(db_switch)
+    db.commit()
+    return True
+  return False
+
+# ========== VLANS ==========
+
+def get_vlans(db: Session, skip: int = 0, limit: int = 100) -> List[Vlan]:
+  return db.query(Vlan).offset(skip).limit(limit).all()
+
+def get_vlan(db: Session, vlan_id: int) -> Optional[Vlan]:
+  return db.query(Vlan).filter(Vlan.id == vlan_id).first()
+
+def create_vlan(db: Session, vlan):
+  db_vlan = Vlan(**vlan.model_dump())
+  db.add(db_vlan)
+  db.commit()
+  db.refresh(db_vlan)
+  return db_vlan
+
+def update_vlan(db: Session, vlan_id: int, vlan):
+  db_vlan = get_vlan(db, vlan_id=vlan_id)
+  if db_vlan:
+    update_data = vlan.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+      setattr(db_vlan, field, value)
+    db.commit()
+    db.refresh(db_vlan)
+  return db_vlan
+
+def delete_vlan(db: Session, vlan_id: int) -> bool:
+  db_vlan = get_vlan(db, vlan_id=vlan_id)
+  if db_vlan:
+    db.delete(db_vlan)
+    db.commit()
+    return True
+  return False
+
+# ========== SWITCH PORTS ==========
+
+def get_switch_ports(db: Session, skip: int = 0, limit: int = 100) -> List[SwitchPort]:
+  return db.query(SwitchPort).offset(skip).limit(limit).all()
+
+def get_switch_ports_by_switch(db: Session, switch_id: int) -> List[SwitchPort]:
+  return db.query(SwitchPort).filter(SwitchPort.switch_id == switch_id).all()
+
+def get_switch_port(db: Session, port_id: int) -> Optional[SwitchPort]:
+  return db.query(SwitchPort).filter(SwitchPort.id == port_id).first()
+
+def create_switch_port(db: Session, port, switch_id: int):
+  db_port = SwitchPort(**port.model_dump(), switch_id=switch_id)
+  db.add(db_port)
+  db.commit()
+  db.refresh(db_port)
+  return db_port
+
+def update_switch_port(db: Session, port_id: int, port):
+  db_port = get_switch_port(db, port_id=port_id)
+  if db_port:
+    update_data = port.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+      setattr(db_port, field, value)
+    db.commit()
+    db.refresh(db_port)
+  return db_port
+
+def delete_switch_port(db: Session, port_id: int) -> bool:
+  db_port = get_switch_port(db, port_id=port_id)
+  if db_port:
+    db.delete(db_port)
     db.commit()
     return True
   return False
