@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Globe, Home, Server, Network, Layers, Users, LogOut, Settings, Upload, MapPin, User, ChevronDown, Shield, Radar } from "lucide-react";
+import { Globe, Home, Server, Network, Layers, Users, LogOut, Settings, Upload, MapPin, User, ChevronDown, Shield, Radar, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authService } from "@/lib/services";
 
@@ -106,6 +106,12 @@ export function Navbar() {
                       <Button variant={pathname === "/network-scan" ? "default" : "ghost"} size="sm">
                         <Radar className="h-4 w-4 mr-2" />
                         Escaneo
+                      </Button>
+                    </Link>
+                    <Link href="/roles">
+                      <Button variant={pathname === "/roles" ? "default" : "ghost"} size="sm">
+                        <KeyRound className="h-4 w-4 mr-2" />
+                        Roles
                       </Button>
                     </Link>
                     <Link href="/audit">

@@ -275,6 +275,59 @@ class DeviceResponse(DeviceBase):
   class Config:
     from_attributes = True
 
+# Permission & Role Schemas
+class PermissionResponse(BaseModel):
+  id: int
+  name: str
+  description: Optional[str] = None
+  category: Optional[str] = None
+
+  class Config:
+    from_attributes = True
+
+class RoleBase(BaseModel):
+  name: str = Field(..., min_length=1, max_length=50)
+  description: Optional[str] = None
+
+class RoleCreate(RoleBase):
+  permission_ids: List[int] = []
+
+class RoleUpdate(BaseModel):
+  name: Optional[str] = Field(None, min_length=1, max_length=50)
+  description: Optional[str] = None
+  permission_ids: Optional[List[int]] = None
+
+class RoleResponse(BaseModel):
+  id: int
+  name: str
+  description: Optional[str] = None
+  is_system: int = 0
+  permissions: List[PermissionResponse] = []
+  created_at: datetime
+
+  class Config:
+    from_attributes = True
+
+class UserRoleAssign(BaseModel):
+  role_ids: List[int]
+
+class UserWithRolesResponse(BaseModel):
+  id: int
+  username: str
+  email: str
+  is_active: bool
+  is_admin: bool
+  created_at: datetime
+  roles: List[RoleResponse] = []
+
+  class Config:
+    from_attributes = True
+
+class UserPermissionsResponse(BaseModel):
+  user_id: int
+  username: str
+  permissions: List[str]
+
 # Audit Log Schemas
 class AuditLogResponse(BaseModel):
   id: int

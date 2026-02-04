@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.core.config import settings
 from app.models.user import Base
 from app.models.audit_log import AuditLog  # noqa: F401 - needed for alembic autogenerate
+from app.models.permissions import Permission, Role, role_permissions, user_roles  # noqa: F401
 
 config = context.config
 

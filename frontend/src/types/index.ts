@@ -339,3 +339,55 @@ export interface QuickAddDeviceRequest {
   asset_type?: number;
   network_level?: number;
 }
+
+// Permission & Role Types
+export interface Permission {
+  id: number;
+  name: string;
+  description: string | null;
+  category: string | null;
+}
+
+export interface Role {
+  id: number;
+  name: string;
+  description: string | null;
+  is_system: number;
+  permissions: Permission[];
+  created_at: string;
+}
+
+export interface RoleCreate {
+  name: string;
+  description?: string;
+  permission_ids: number[];
+}
+
+export interface RoleUpdate {
+  name?: string;
+  description?: string;
+  permission_ids?: number[];
+}
+
+export interface UserWithRoles {
+  id: number;
+  username: string;
+  email: string;
+  is_active: boolean;
+  is_admin: boolean;
+  created_at: string;
+  roles: Role[];
+}
+
+export interface UserPermissions {
+  user_id: number;
+  username: string;
+  permissions: string[];
+}
+
+export interface MyPermissions {
+  user_id: number;
+  username: string;
+  is_admin: boolean;
+  permissions: string[];
+}

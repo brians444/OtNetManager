@@ -14,6 +14,9 @@ class User(Base):
   created_at = Column(DateTime, server_default=func.now())
   updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+  # Roles relationship - uses string references to avoid circular imports
+  roles = relationship("Role", secondary="user_roles", back_populates="users")
+
 class AssetType(Base):
   __tablename__ = "asset_types"
 

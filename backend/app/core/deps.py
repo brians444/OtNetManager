@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -40,3 +41,44 @@ async def get_current_admin_user(current_user = Depends(get_current_active_user)
       detail="Not enough permissions"
     )
   return current_user
+
+def get_user_permissions(db: Session, user_id: int) -> List[str]:
+  """Get all permission names for a user through their roles"""
+  from ..models.permissions import Permission, Role, role_permissions, user_roles
+  from ..models.user import User
+
+  user = db.query(User).filter(User.id == user_id).first()
+  if not user:
+    return []
+
+  # Super admin bypass: is_admin flag grants all permissions
+  if user.is_admin:
+    perms = db.query(Permission.name).all()
+    return [p[0] for p in perms]
+
+  # Get permissions through roles
+  perms = (
+    db.query(Permission.name)
+    .join(role_permissions, Permission.id == role_permissions.c.permission_id)
+    .join(Role, Role.id == role_permissions.c.role_id)
+    .join(user_roles, Role.id == user_roles.c.role_id)
+    .filter(user_roles.c.user_id == user_id)
+    .distinct()
+    .all()
+  )
+  return [p[0] for p in perms]
+
+def require_permission(permission_name: str):
+  """Dependency factory that checks if user has a specific permission"""
+  async def permission_checker(
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+  ):
+    user_perms = get_user_permissions(db, current_user.id)
+    if permission_name not in user_perms:
+      raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Permission required: {permission_name}"
+      )
+    return current_user
+  return permission_checker
