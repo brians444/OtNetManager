@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { deviceService, subnetService, assetTypeService, networkLevelService, locationService, sectorService } from "@/lib/services";
-import { Device, DeviceCreate, DeviceUpdate, Subnet, AssetType, NetworkLevel, Location as LocationType, Sector, FreeIP, DevicePingResult } from "@/types";
+import { deviceService, subnetService, assetTypeService, networkLevelService, locationService, sectorService, instalacionService } from "@/lib/services";
+import { Device, DeviceCreate, DeviceUpdate, Subnet, AssetType, NetworkLevel, Location as LocationType, Sector, Instalacion, FreeIP, DevicePingResult } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export default function DevicesPage() {
   const [showCredentials, setShowCredentials] = useState<number | null>(null);
   const [showAddCredential, setShowAddCredential] = useState(false);
   const [newCredential, setNewCredential] = useState({ username: "", password: "", description: "" });
-  
+
   // Estado para ping
   const [pingResults, setPingResults] = useState<Record<number, DevicePingResult>>({});
   const [pingLoading, setPingLoading] = useState<Record<number, boolean>>({});
@@ -78,6 +78,11 @@ export default function DevicesPage() {
     queryFn: () => sectorService.getSectors(),
   });
 
+  const { data: instalaciones }: { data: Instalacion[] | undefined } = useQuery({
+    queryKey: ["instalaciones"],
+    queryFn: () => instalacionService.getInstalaciones(),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deviceService.deleteDevice(id),
     onSuccess: () => {
@@ -88,14 +93,11 @@ export default function DevicesPage() {
 
   const credentialMutation = useMutation({
     mutationFn: (credential: { username: string; password: string; description?: string }) => {
-      // Limpiar campos vacíos antes de enviar
       const cleanedCredential = {
         username: credential.username,
         password: credential.password,
         ...(credential.description && credential.description.trim() && { description: credential.description })
       };
-      console.log("AddCredential - credential:", credential);
-      console.log("AddCredential - cleanedCredential:", cleanedCredential);
       return deviceService.addCredential(showCredentials!, cleanedCredential);
     },
     onSuccess: () => {
@@ -122,6 +124,7 @@ export default function DevicesPage() {
       ...device,
       location_id: device.location_id || null,
       sector_id: device.sector_id || null,
+      instalacion_id: device.instalacion_id || null,
     });
     setShowEditModal(true);
   };
@@ -138,7 +141,6 @@ export default function DevicesPage() {
 
   const handleAddCredential = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("handleAddCredential - newCredential:", newCredential);
     credentialMutation.mutate(newCredential);
   };
 
@@ -227,16 +229,16 @@ export default function DevicesPage() {
                     value={filters.name}
                     onChange={(e) => handleFilterChange("name", e.target.value)}
                   />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Hostname</label>
-          <Input
-            placeholder="Buscar por hostname"
-            value={filters.hostname}
-            onChange={(e) => handleFilterChange("hostname", e.target.value)}
-          />
-        </div>
-        <div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Hostname</label>
+                  <Input
+                    placeholder="Buscar por hostname"
+                    value={filters.hostname}
+                    onChange={(e) => handleFilterChange("hostname", e.target.value)}
+                  />
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-1 block">Dirección IP</label>
                   <Input
                     placeholder="Buscar por IP"
@@ -293,7 +295,8 @@ export default function DevicesPage() {
                 <TableHead className="py-2">Nivel</TableHead>
                 <TableHead className="py-2">Subred</TableHead>
                 <TableHead className="py-2">Ubicación</TableHead>
-                <TableHead className="py-2">Sector</TableHead>
+                <TableHead className="py-2">Locación</TableHead>
+                <TableHead className="py-2">Instalación</TableHead>
                 <TableHead className="py-2">Gateway</TableHead>
                 <TableHead className="text-right py-2">Acciones</TableHead>
               </TableRow>
@@ -332,6 +335,7 @@ export default function DevicesPage() {
                   <TableCell className="py-2">{device.subnet_name || "-"}</TableCell>
                   <TableCell className="py-2">{device.location_name || "-"}</TableCell>
                   <TableCell className="py-2">{device.sector_name || "-"}</TableCell>
+                  <TableCell className="py-2">{device.instalacion_name || "-"}</TableCell>
                   <TableCell className="py-2">{device.default_gateway || "-"}</TableCell>
                   <TableCell className="text-right py-2">
                     <div className="flex gap-1 justify-end">
@@ -468,8 +472,8 @@ export default function DevicesPage() {
                 networkLevels={networkLevels || []}
                 locations={locations || []}
                 sectors={sectors || []}
+                instalaciones={instalaciones || []}
                 onSuccess={() => {
-                  console.log("CreateDeviceForm - calling onSuccess");
                   setShowCreateModal(false);
                   queryClient.invalidateQueries({ queryKey: ["devices"] });
                   queryClient.invalidateQueries({ queryKey: ["subnets"] });
@@ -491,8 +495,8 @@ export default function DevicesPage() {
                 networkLevels={networkLevels || []}
                 locations={locations || []}
                 sectors={sectors || []}
+                instalaciones={instalaciones || []}
                 onSuccess={() => {
-                  console.log("EditDeviceForm - calling onSuccess");
                   setShowEditModal(false);
                   setSelectedDevice(null);
                   queryClient.invalidateQueries({ queryKey: ["devices"] });
@@ -526,12 +530,14 @@ export default function DevicesPage() {
   );
 }
 
-function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLevels, locations, sectors }: { onSuccess: () => void; onCancel: () => void; subnets: Subnet[]; assetTypes: AssetType[]; networkLevels: NetworkLevel[]; locations: LocationType[]; sectors: Sector[] }) {
+function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLevels, locations, sectors, instalaciones }: { onSuccess: () => void; onCancel: () => void; subnets: Subnet[]; assetTypes: AssetType[]; networkLevels: NetworkLevel[]; locations: LocationType[]; sectors: Sector[]; instalaciones: Instalacion[] }) {
   const [formData, setFormData] = useState({
     name: "",
     hostname: "",
     location_id: null as number | null,
     sector_id: null as number | null,
+    instalacion_id: null as number | null,
+    detail: "",
     model: null as string | null,
     brand: null as string | null,
     asset_type: null as number | null,
@@ -545,6 +551,11 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
   const [freeIPs, setFreeIPs] = useState<FreeIP[]>([]);
   const [loadingFreeIPs, setLoadingFreeIPs] = useState(false);
   const [ipMode, setIpMode] = useState<"select" | "manual">("select");
+
+  // Filter subnets by selected location
+  const filteredSubnets = formData.location_id
+    ? subnets.filter(s => s.location_id === formData.location_id)
+    : subnets;
 
   const loadFreeIPs = async (subnetId: number) => {
     setLoadingFreeIPs(true);
@@ -560,18 +571,14 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
 
   const mutation = useMutation({
     mutationFn: () => {
-      // Limpiar campos vacíos antes de enviar, pero mantener números válidos
       const cleanedData = Object.fromEntries(
-        Object.entries(formData).filter(([_, value]) => 
+        Object.entries(formData).filter(([_, value]) =>
           value !== "" && value !== null && value !== undefined
         )
       );
-      console.log("CreateDevice - formData:", formData);
-      console.log("CreateDevice - cleanedData:", cleanedData);
       return deviceService.createDevice(cleanedData as unknown as DeviceCreate);
     },
     onSuccess: () => {
-      console.log("CreateDevice - onSuccess, invalidating queries");
       onSuccess();
     },
   });
@@ -606,28 +613,16 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
             value={formData.location_id?.toString() || ""}
             onValueChange={(value) => {
               const locationId = value ? parseInt(value) : null;
-              const selectedLocation = locations.find(loc => loc.id === locationId);
-
-              // Auto-populate subnet if there's a subnet matching the location name
-              const matchingSubnet = subnets.find(subnet =>
-                subnet.location === selectedLocation?.name
-              );
-
-              const newFormData = {
+              setFormData({
                 ...formData,
                 location_id: locationId,
                 sector_id: null,
-                subnet_id: matchingSubnet?.id || null,
-                netmask: matchingSubnet?.netmask || formData.netmask,
-                default_gateway: matchingSubnet?.default_gateway || formData.default_gateway,
+                instalacion_id: null,
+                subnet_id: null,
+                network_level: null,
                 ip_address: "",
-              };
-              setFormData(newFormData);
-              if (matchingSubnet) {
-                loadFreeIPs(matchingSubnet.id);
-              } else {
-                setFreeIPs([]);
-              }
+              });
+              setFreeIPs([]);
             }}
           >
             <SelectTrigger>
@@ -643,17 +638,17 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
           </Select>
         </div>
         <div>
-          <label className="text-sm font-medium">Sector</label>
+          <label className="text-sm font-medium">Locación</label>
           <Select
             value={formData.sector_id?.toString() || ""}
             onValueChange={(value) => {
               const sectorId = value ? parseInt(value) : null;
-              setFormData({ ...formData, sector_id: sectorId });
+              setFormData({ ...formData, sector_id: sectorId, instalacion_id: null });
             }}
             disabled={!formData.location_id}
           >
             <SelectTrigger>
-              <SelectValue placeholder={formData.location_id ? "Seleccionar sector" : "Seleccione primero una ubicación"} />
+              <SelectValue placeholder={formData.location_id ? "Seleccionar locación" : "Seleccione primero una ubicación"} />
             </SelectTrigger>
             <SelectContent>
               {sectors
@@ -667,15 +662,41 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
           </Select>
         </div>
         <div>
+          <label className="text-sm font-medium">Instalación</label>
+          <Select
+            value={formData.instalacion_id?.toString() || ""}
+            onValueChange={(value) => {
+              setFormData({ ...formData, instalacion_id: value ? parseInt(value) : null });
+            }}
+            disabled={!formData.sector_id}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={formData.sector_id ? "Seleccionar instalación" : "Seleccione primero una locación"} />
+            </SelectTrigger>
+            <SelectContent>
+              {instalaciones
+                .filter(inst => inst.locacion_id === formData.sector_id)
+                .map((inst) => (
+                  <SelectItem key={inst.id} value={inst.id.toString()}>
+                    {inst.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <label className="text-sm font-medium">Subred</label>
           <Select
             value={formData.subnet_id?.toString() || ""}
             onValueChange={(value) => {
               const subnetId = value ? parseInt(value) : null;
               const selectedSubnet = subnets.find(s => s.id === subnetId);
+              // Auto-complete network level from subnet
+              const nlId = selectedSubnet?.network_level_id || null;
               setFormData({
                 ...formData,
                 subnet_id: subnetId,
+                network_level: nlId,
                 netmask: selectedSubnet?.netmask || formData.netmask,
                 default_gateway: selectedSubnet?.default_gateway || formData.default_gateway,
                 ip_address: "",
@@ -691,7 +712,7 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
               <SelectValue placeholder="Seleccionar subred" />
             </SelectTrigger>
             <SelectContent>
-              {subnets.map((subnet) => (
+              {filteredSubnets.map((subnet) => (
                 <SelectItem key={subnet.id} value={subnet.id.toString()}>
                   {subnet.name} ({subnet.subnet})
                 </SelectItem>
@@ -798,17 +819,13 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
           </Select>
         </div>
         <div>
-          <label className="text-sm font-medium">Network Level</label>
-          <Select value={formData.network_level?.toString() || ""} onValueChange={(value) => setFormData({ ...formData, network_level: value ? parseInt(value) : null })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar nivel" />
-            </SelectTrigger>
-            <SelectContent>
-              {networkLevels.map((level) => (
-                <SelectItem key={level.id} value={level.id.toString()}>{level.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <label className="text-sm font-medium">Nivel de Red</label>
+          <Input
+            value={formData.network_level ? (networkLevels.find(nl => nl.id === formData.network_level)?.name || "") : ""}
+            placeholder="Se auto-completa desde la subred"
+            readOnly
+            className="bg-muted"
+          />
         </div>
         <div>
           <label className="text-sm font-medium">Model</label>
@@ -822,6 +839,15 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
           <Input
             value={formData.brand || ""}
             onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="text-sm font-medium">Detalle</label>
+          <textarea
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={formData.detail}
+            onChange={(e) => setFormData({ ...formData, detail: e.target.value })}
+            placeholder="Detalles adicionales del dispositivo"
           />
         </div>
       </div>
@@ -838,7 +864,7 @@ function CreateDeviceForm({ onSuccess, onCancel, subnets, assetTypes, networkLev
   );
 }
 
-function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, networkLevels, locations, sectors }: { device: Device; onSuccess: () => void; onCancel: () => void; subnets: Subnet[]; assetTypes: AssetType[]; networkLevels: NetworkLevel[]; locations: LocationType[]; sectors: Sector[] }) {
+function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, networkLevels, locations, sectors, instalaciones }: { device: Device; onSuccess: () => void; onCancel: () => void; subnets: Subnet[]; assetTypes: AssetType[]; networkLevels: NetworkLevel[]; locations: LocationType[]; sectors: Sector[]; instalaciones: Instalacion[] }) {
   const [formData, setFormData] = useState({
     name: device.name,
     hostname: device.hostname || null,
@@ -851,24 +877,27 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
     ip_address: device.ip_address,
     default_gateway: device.default_gateway || null,
     netmask: device.netmask || null,
-    location_id: device.location_id || null,        // Nueva relación
-    sector_id: device.sector_id || null,             // Nueva relación
+    location_id: device.location_id || null,
+    sector_id: device.sector_id || null,
+    instalacion_id: device.instalacion_id || null,
+    detail: device.detail || "",
   });
+
+  // Filter subnets by selected location
+  const filteredSubnets = formData.location_id
+    ? subnets.filter(s => s.location_id === formData.location_id)
+    : subnets;
 
   const mutation = useMutation({
     mutationFn: () => {
-      // Limpiar campos vacíos antes de enviar, pero mantener números válidos
       const cleanedData = Object.fromEntries(
-        Object.entries(formData).filter(([_, value]) => 
+        Object.entries(formData).filter(([_, value]) =>
           value !== "" && value !== null && value !== undefined
         )
       );
-      console.log("UpdateDevice - formData:", formData);
-      console.log("UpdateDevice - cleanedData:", cleanedData);
       return deviceService.updateDevice(device.id, cleanedData as unknown as DeviceUpdate);
     },
     onSuccess: () => {
-      console.log("UpdateDevice - onSuccess, invalidating queries");
       onSuccess();
     },
   });
@@ -903,20 +932,13 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
             value={formData.location_id?.toString() || ""}
             onValueChange={(value) => {
               const locationId = value ? parseInt(value) : null;
-              const selectedLocation = locations.find(loc => loc.id === locationId);
-
-              // Auto-populate subnet if there's a subnet matching the location name
-              const matchingSubnet = subnets.find(subnet =>
-                subnet.location === selectedLocation?.name
-              );
-
               setFormData({
                 ...formData,
                 location_id: locationId,
-                sector_id: null,  // Reset sector when location changes
-                subnet_id: matchingSubnet?.id || null,
-                netmask: matchingSubnet?.netmask || formData.netmask,
-                default_gateway: matchingSubnet?.default_gateway || formData.default_gateway
+                sector_id: null,
+                instalacion_id: null,
+                subnet_id: null,
+                network_level: null,
               });
             }}
           >
@@ -933,17 +955,17 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
           </Select>
         </div>
         <div>
-          <label className="text-sm font-medium">Sector</label>
+          <label className="text-sm font-medium">Locación</label>
           <Select
             value={formData.sector_id?.toString() || ""}
             onValueChange={(value) => {
               const sectorId = value ? parseInt(value) : null;
-              setFormData({ ...formData, sector_id: sectorId });
+              setFormData({ ...formData, sector_id: sectorId, instalacion_id: null });
             }}
             disabled={!formData.location_id}
           >
             <SelectTrigger>
-              <SelectValue placeholder={formData.location_id ? "Seleccionar sector" : "Seleccione primero una ubicación"} />
+              <SelectValue placeholder={formData.location_id ? "Seleccionar locación" : "Seleccione primero una ubicación"} />
             </SelectTrigger>
             <SelectContent>
               {sectors
@@ -951,6 +973,29 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
                 .map((sector) => (
                   <SelectItem key={sector.id} value={sector.id.toString()}>
                     {sector.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm font-medium">Instalación</label>
+          <Select
+            value={formData.instalacion_id?.toString() || ""}
+            onValueChange={(value) => {
+              setFormData({ ...formData, instalacion_id: value ? parseInt(value) : null });
+            }}
+            disabled={!formData.sector_id}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={formData.sector_id ? "Seleccionar instalación" : "Seleccione primero una locación"} />
+            </SelectTrigger>
+            <SelectContent>
+              {instalaciones
+                .filter(inst => inst.locacion_id === formData.sector_id)
+                .map((inst) => (
+                  <SelectItem key={inst.id} value={inst.id.toString()}>
+                    {inst.name}
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -996,9 +1041,11 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
             onValueChange={(value) => {
               const subnetId = value ? parseInt(value) : null;
               const selectedSubnet = subnets.find(s => s.id === subnetId);
+              const nlId = selectedSubnet?.network_level_id || null;
               setFormData({
                 ...formData,
                 subnet_id: subnetId,
+                network_level: nlId,
                 netmask: selectedSubnet?.netmask || formData.netmask,
                 default_gateway: selectedSubnet?.default_gateway || formData.default_gateway
               });
@@ -1008,7 +1055,7 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
               <SelectValue placeholder="Seleccionar subred" />
             </SelectTrigger>
             <SelectContent>
-              {subnets.map((subnet) => (
+              {filteredSubnets.map((subnet) => (
                 <SelectItem key={subnet.id} value={subnet.id.toString()}>
                   {subnet.name} ({subnet.subnet})
                 </SelectItem>
@@ -1030,17 +1077,13 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
           </Select>
         </div>
         <div>
-          <label className="text-sm font-medium">Network Level</label>
-          <Select value={formData.network_level?.toString() || ""} onValueChange={(value) => setFormData({ ...formData, network_level: value ? parseInt(value) : null })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar nivel" />
-            </SelectTrigger>
-            <SelectContent>
-              {networkLevels.map((level) => (
-                <SelectItem key={level.id} value={level.id.toString()}>{level.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <label className="text-sm font-medium">Nivel de Red</label>
+          <Input
+            value={formData.network_level ? (networkLevels.find(nl => nl.id === formData.network_level)?.name || "") : ""}
+            placeholder="Se auto-completa desde la subred"
+            readOnly
+            className="bg-muted"
+          />
         </div>
         <div>
           <label className="text-sm font-medium">Model</label>
@@ -1054,6 +1097,15 @@ function EditDeviceForm({ device, onSuccess, onCancel, subnets, assetTypes, netw
           <Input
             value={formData.brand || ""}
             onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="text-sm font-medium">Detalle</label>
+          <textarea
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={formData.detail}
+            onChange={(e) => setFormData({ ...formData, detail: e.target.value })}
+            placeholder="Detalles adicionales del dispositivo"
           />
         </div>
       </div>

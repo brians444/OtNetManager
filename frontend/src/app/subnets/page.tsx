@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { subnetService } from "@/lib/services";
-import { Subnet } from "@/types";
+import { subnetService, locationService, networkLevelService } from "@/lib/services";
+import { Subnet, Location as LocationType, NetworkLevel } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { useState } from "react";
@@ -13,15 +14,41 @@ export default function SubnetsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSubnet, setSelectedSubnet] = useState<Subnet | null>(null);
-  const [formData, setFormData] = useState({ name: "", location: "", subnet: "", default_gateway: "", netmask: "", max_devices: 254 });
+  const [formData, setFormData] = useState({
+    name: "",
+    location_id: null as number | null,
+    network_level_id: null as number | null,
+    subnet: "",
+    default_gateway: "",
+    netmask: "",
+    max_devices: 254,
+  });
 
   const { data: subnets, isLoading, refetch } = useQuery({
     queryKey: ["subnets"],
     queryFn: () => subnetService.getSubnets(),
   });
 
+  const { data: locations } = useQuery({
+    queryKey: ["locations"],
+    queryFn: () => locationService.getLocations(),
+  });
+
+  const { data: networkLevels } = useQuery({
+    queryKey: ["network-levels"],
+    queryFn: () => networkLevelService.getNetworkLevels(),
+  });
+
   const handleCreate = () => {
-    setFormData({ name: "", location: "", subnet: "", default_gateway: "", netmask: "", max_devices: 254 });
+    setFormData({
+      name: "",
+      location_id: null,
+      network_level_id: null,
+      subnet: "",
+      default_gateway: "",
+      netmask: "",
+      max_devices: 254,
+    });
     setSelectedSubnet(null);
     setShowCreateModal(true);
   };
@@ -29,7 +56,8 @@ export default function SubnetsPage() {
   const handleEdit = (subnet: Subnet) => {
     setFormData({
       name: subnet.name,
-      location: subnet.location,
+      location_id: subnet.location_id,
+      network_level_id: subnet.network_level_id,
       subnet: subnet.subnet,
       default_gateway: subnet.default_gateway,
       netmask: subnet.netmask,
@@ -40,7 +68,6 @@ export default function SubnetsPage() {
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!formData.name.trim()) {
       alert("El nombre es requerido");
       return;
@@ -49,7 +76,6 @@ export default function SubnetsPage() {
       alert("La subred es requerida");
       return;
     }
-    // Validate CIDR format (basic check)
     if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/.test(formData.subnet)) {
       alert("Formato de subred inválido. Use formato CIDR (ej: 192.168.1.0/24)");
       return;
@@ -68,10 +94,26 @@ export default function SubnetsPage() {
     }
 
     try {
+      // Build payload, resolving location name for backward compat
+      const locationName = formData.location_id
+        ? locations?.find(l => l.id === formData.location_id)?.name || ""
+        : "";
+
+      const payload = {
+        name: formData.name,
+        location: locationName,
+        location_id: formData.location_id,
+        network_level_id: formData.network_level_id,
+        subnet: formData.subnet,
+        default_gateway: formData.default_gateway,
+        netmask: formData.netmask,
+        max_devices: formData.max_devices,
+      };
+
       if (selectedSubnet) {
-        await subnetService.updateSubnet(selectedSubnet.id, formData);
+        await subnetService.updateSubnet(selectedSubnet.id, payload);
       } else {
-        await subnetService.createSubnet(formData);
+        await subnetService.createSubnet(payload);
       }
       setShowCreateModal(false);
       setShowEditModal(false);
@@ -121,6 +163,7 @@ export default function SubnetsPage() {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Ubicación</TableHead>
+              <TableHead>Nivel de Red</TableHead>
               <TableHead>Subnet</TableHead>
               <TableHead>Gateway</TableHead>
               <TableHead>Máscara</TableHead>
@@ -132,7 +175,8 @@ export default function SubnetsPage() {
             {subnets?.map((subnet) => (
               <TableRow key={subnet.id}>
                 <TableCell className="font-medium">{subnet.name}</TableCell>
-                <TableCell>{subnet.location}</TableCell>
+                <TableCell>{subnet.location_name || subnet.location || "-"}</TableCell>
+                <TableCell>{subnet.network_level_name || "-"}</TableCell>
                 <TableCell className="font-mono">{subnet.subnet}</TableCell>
                 <TableCell>{subnet.default_gateway}</TableCell>
                 <TableCell>{subnet.netmask}</TableCell>
@@ -177,11 +221,39 @@ export default function SubnetsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Ubicación</label>
-                  <Input
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Opcional"
-                  />
+                  <Select
+                    value={formData.location_id?.toString() || ""}
+                    onValueChange={(value) => setFormData({ ...formData, location_id: value ? parseInt(value) : null })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar ubicación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations?.map((location) => (
+                        <SelectItem key={location.id} value={location.id.toString()}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Nivel de Red</label>
+                  <Select
+                    value={formData.network_level_id?.toString() || ""}
+                    onValueChange={(value) => setFormData({ ...formData, network_level_id: value ? parseInt(value) : null })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar nivel de red" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {networkLevels?.map((level) => (
+                        <SelectItem key={level.id} value={level.id.toString()}>
+                          {level.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Subnet (CIDR) *</label>

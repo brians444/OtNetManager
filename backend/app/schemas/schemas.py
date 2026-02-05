@@ -117,9 +117,32 @@ class SectorResponse(SectorBase):
   class Config:
     from_attributes = True
 
+class InstalacionBase(BaseModel):
+  name: str = Field(..., min_length=1, max_length=100)
+  locacion_id: int
+  description: Optional[str] = None
+
+class InstalacionCreate(InstalacionBase):
+  pass
+
+class InstalacionUpdate(BaseModel):
+  name: Optional[str] = Field(None, min_length=1, max_length=100)
+  locacion_id: Optional[int] = None
+  description: Optional[str] = None
+
+class InstalacionResponse(InstalacionBase):
+  id: int
+  created_at: datetime
+  locacion_name: Optional[str] = None
+
+  class Config:
+    from_attributes = True
+
 class SubnetBase(BaseModel):
   name: str = Field(..., min_length=1, max_length=100)
   location: Optional[str] = Field(None, max_length=100)
+  location_id: Optional[int] = None
+  network_level_id: Optional[int] = None
   subnet: str = Field(..., pattern=r"^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$", description="Subnet in CIDR notation (e.g., 192.168.1.0/24)")
   default_gateway: str = Field(..., max_length=45)
   netmask: str = Field(..., max_length=45)
@@ -131,6 +154,8 @@ class SubnetCreate(SubnetBase):
 class SubnetUpdate(BaseModel):
   name: Optional[str] = Field(None, min_length=1, max_length=100)
   location: Optional[str] = None
+  location_id: Optional[int] = None
+  network_level_id: Optional[int] = None
   subnet: Optional[str] = Field(None, pattern=r"^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$")
   default_gateway: Optional[str] = None
   netmask: Optional[str] = None
@@ -140,6 +165,8 @@ class SubnetResponse(SubnetBase):
   id: int
   current_devices: int
   created_at: datetime
+  location_name: Optional[str] = None
+  network_level_name: Optional[str] = None
 
   class Config:
     from_attributes = True
@@ -149,6 +176,8 @@ class DeviceBase(BaseModel):
   hostname: Optional[str] = None
   location_id: Optional[int] = None
   sector_id: Optional[int] = None
+  instalacion_id: Optional[int] = None
+  detail: Optional[str] = None
   model: Optional[str] = None
   brand: Optional[str] = None
   asset_type: Optional[int] = None
@@ -263,6 +292,8 @@ class DeviceResponse(DeviceBase):
   created_at: datetime
   location_id: Optional[int] = None
   sector_id: Optional[int] = None
+  instalacion_id: Optional[int] = None
+  detail: Optional[str] = None
   is_public: Optional[bool] = None
   access_level: Optional[str] = None
   credentials: List[CredentialResponse] = []
@@ -271,6 +302,7 @@ class DeviceResponse(DeviceBase):
   subnet_name: Optional[str] = None
   location_name: Optional[str] = None
   sector_name: Optional[str] = None
+  instalacion_name: Optional[str] = None
 
   class Config:
     from_attributes = True

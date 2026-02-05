@@ -7,12 +7,50 @@ from ..schemas.schemas import (
   SubnetIPInfo, FreeIPResponse, IPValidationRequest, IPValidationResponse
 )
 from ..crud.crud import (
-  get_subnets, get_subnet, create_subnet, update_subnet, delete_subnet
+  get_subnets, get_subnet, create_subnet, update_subnet, delete_subnet,
+  get_subnets_by_location, get_location, get_network_level
 )
 from ..core.deps import get_current_active_user
 from ..utils.network import get_all_ips_in_subnet, get_used_ips_in_subnet, get_free_ips_in_subnet, is_ip_in_subnet
 
 router = APIRouter()
+
+def enrich_subnet(subnet, db: Session) -> dict:
+  """Add related names to subnet response"""
+  subnet_dict = {
+    "id": subnet.id,
+    "name": subnet.name,
+    "location": subnet.location,
+    "location_id": subnet.location_id,
+    "network_level_id": subnet.network_level_id,
+    "subnet": subnet.subnet,
+    "default_gateway": subnet.default_gateway,
+    "netmask": subnet.netmask,
+    "max_devices": subnet.max_devices,
+    "current_devices": subnet.current_devices,
+    "created_at": subnet.created_at,
+    "location_name": None,
+    "network_level_name": None,
+  }
+  if subnet.location_id:
+    location = get_location(db, location_id=subnet.location_id)
+    if location:
+      subnet_dict["location_name"] = location.name
+  if subnet.network_level_id:
+    nl = get_network_level(db, network_level_id=subnet.network_level_id)
+    if nl:
+      subnet_dict["network_level_name"] = nl.name
+  return subnet_dict
+
+@router.get("/by-location/{location_id}", response_model=List[SubnetResponse])
+def get_subnets_by_location_endpoint(
+  location_id: int,
+  db: Session = Depends(get_db),
+  current_user = Depends(get_current_active_user)
+):
+  """Get subnets filtered by location"""
+  subnets = get_subnets_by_location(db, location_id=location_id)
+  return [enrich_subnet(s, db) for s in subnets]
 
 @router.get("", response_model=List[SubnetResponse])
 def get_subnet_list(
@@ -21,7 +59,8 @@ def get_subnet_list(
   db: Session = Depends(get_db),
   current_user = Depends(get_current_active_user)
 ):
-  return get_subnets(db, skip=skip, limit=limit)
+  subnets = get_subnets(db, skip=skip, limit=limit)
+  return [enrich_subnet(s, db) for s in subnets]
 
 @router.get("/{subnet_id}", response_model=SubnetResponse)
 def read_subnet(
@@ -32,7 +71,7 @@ def read_subnet(
   db_subnet = get_subnet(db, subnet_id=subnet_id)
   if db_subnet is None:
     raise HTTPException(status_code=404, detail="Subnet not found")
-  return db_subnet
+  return enrich_subnet(db_subnet, db)
 
 @router.post("", response_model=SubnetResponse, status_code=status.HTTP_201_CREATED)
 def create_new_subnet(
@@ -40,7 +79,8 @@ def create_new_subnet(
   db: Session = Depends(get_db),
   current_user = Depends(get_current_active_user)
 ):
-  return create_subnet(db=db, subnet=subnet)
+  db_subnet = create_subnet(db=db, subnet=subnet)
+  return enrich_subnet(db_subnet, db)
 
 @router.put("/{subnet_id}", response_model=SubnetResponse)
 def update_existing_subnet(
@@ -52,7 +92,7 @@ def update_existing_subnet(
   db_subnet = update_subnet(db, subnet_id=subnet_id, subnet=subnet)
   if db_subnet is None:
     raise HTTPException(status_code=404, detail="Subnet not found")
-  return db_subnet
+  return enrich_subnet(db_subnet, db)
 
 @router.delete("/{subnet_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_existing_subnet(

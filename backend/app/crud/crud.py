@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from ..models.user import User, Device, Credential, AssetType, NetworkLevel, Subnet, Location, Sector, Switch, Vlan, SwitchPort
+from ..models.user import User, Device, Credential, AssetType, NetworkLevel, Subnet, Location, Sector, Instalacion, Switch, Vlan, SwitchPort
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
   return db.query(User).filter(User.id == user_id).first()
@@ -222,6 +222,47 @@ def delete_sector(db: Session, sector_id: int) -> bool:
     db.commit()
     return True
   return False
+
+# ========== INSTALACIONES ==========
+
+def get_instalaciones(db: Session, skip: int = 0, limit: int = 100) -> List[Instalacion]:
+  return db.query(Instalacion).offset(skip).limit(limit).all()
+
+def get_instalaciones_by_locacion(db: Session, locacion_id: int) -> List[Instalacion]:
+  return db.query(Instalacion).filter(Instalacion.locacion_id == locacion_id).all()
+
+def get_instalacion(db: Session, instalacion_id: int) -> Optional[Instalacion]:
+  return db.query(Instalacion).filter(Instalacion.id == instalacion_id).first()
+
+def create_instalacion(db: Session, instalacion):
+  db_instalacion = Instalacion(**instalacion.model_dump())
+  db.add(db_instalacion)
+  db.commit()
+  db.refresh(db_instalacion)
+  return db_instalacion
+
+def update_instalacion(db: Session, instalacion_id: int, instalacion):
+  db_instalacion = get_instalacion(db, instalacion_id=instalacion_id)
+  if db_instalacion:
+    update_data = instalacion.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+      setattr(db_instalacion, field, value)
+    db.commit()
+    db.refresh(db_instalacion)
+  return db_instalacion
+
+def delete_instalacion(db: Session, instalacion_id: int) -> bool:
+  db_instalacion = get_instalacion(db, instalacion_id=instalacion_id)
+  if db_instalacion:
+    db.delete(db_instalacion)
+    db.commit()
+    return True
+  return False
+
+# ========== SUBNETS BY LOCATION ==========
+
+def get_subnets_by_location(db: Session, location_id: int) -> List[Subnet]:
+  return db.query(Subnet).filter(Subnet.location_id == location_id).all()
 
 # ========== SWITCHES ==========
 

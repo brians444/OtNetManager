@@ -6,11 +6,135 @@ from ..core.deps import get_current_active_user
 from ..crud import crud
 from ..schemas.schemas import (
   LocationCreate, LocationUpdate, LocationResponse,
-  SectorCreate, SectorUpdate, SectorResponse
+  SectorCreate, SectorUpdate, SectorResponse,
+  InstalacionCreate, InstalacionUpdate, InstalacionResponse
 )
-from ..models.user import User, Location, Sector
+from ..models.user import User, Location, Sector, Instalacion
 
 router = APIRouter()
+
+# ========== INSTALACIONES ==========
+# NOTE: Instalacion routes must be defined BEFORE /{location_id} to avoid route conflicts
+
+@router.get("/instalaciones", response_model=List[InstalacionResponse])
+def get_all_instalaciones(
+  locacion_id: Optional[int] = Query(None, description="Filter instalaciones by locacion"),
+  skip: int = 0,
+  limit: int = 100,
+  db: Session = Depends(get_db)
+):
+  """Get all instalaciones, optionally filtered by locacion"""
+  if locacion_id:
+    instalaciones = crud.get_instalaciones_by_locacion(db, locacion_id=locacion_id)
+  else:
+    instalaciones = crud.get_instalaciones(db, skip=skip, limit=limit)
+
+  result = []
+  for inst in instalaciones:
+    inst_dict = {
+      "id": inst.id,
+      "name": inst.name,
+      "locacion_id": inst.locacion_id,
+      "description": inst.description,
+      "created_at": inst.created_at,
+      "locacion_name": None
+    }
+    if inst.locacion_id:
+      locacion = crud.get_sector(db, sector_id=inst.locacion_id)
+      if locacion:
+        inst_dict["locacion_name"] = locacion.name
+    result.append(inst_dict)
+  return result
+
+@router.get("/instalaciones/{instalacion_id}", response_model=InstalacionResponse)
+def get_instalacion(instalacion_id: int, db: Session = Depends(get_db)):
+  """Get a specific instalacion by ID"""
+  inst = crud.get_instalacion(db, instalacion_id=instalacion_id)
+  if not inst:
+    raise HTTPException(status_code=404, detail="Instalacion not found")
+
+  result = {
+    "id": inst.id,
+    "name": inst.name,
+    "locacion_id": inst.locacion_id,
+    "description": inst.description,
+    "created_at": inst.created_at,
+    "locacion_name": None
+  }
+  if inst.locacion_id:
+    locacion = crud.get_sector(db, sector_id=inst.locacion_id)
+    if locacion:
+      result["locacion_name"] = locacion.name
+  return result
+
+@router.post("/instalaciones", response_model=InstalacionResponse, status_code=status.HTTP_201_CREATED)
+def create_instalacion(
+  instalacion: InstalacionCreate,
+  db: Session = Depends(get_db),
+  current_user: User = Depends(get_current_active_user)
+):
+  """Create a new instalacion"""
+  if instalacion.locacion_id:
+    locacion = crud.get_sector(db, sector_id=instalacion.locacion_id)
+    if not locacion:
+      raise HTTPException(status_code=404, detail="Locacion not found")
+
+  db_inst = crud.create_instalacion(db, instalacion=instalacion)
+  result = {
+    "id": db_inst.id,
+    "name": db_inst.name,
+    "locacion_id": db_inst.locacion_id,
+    "description": db_inst.description,
+    "created_at": db_inst.created_at,
+    "locacion_name": None
+  }
+  if db_inst.locacion_id:
+    locacion = crud.get_sector(db, sector_id=db_inst.locacion_id)
+    if locacion:
+      result["locacion_name"] = locacion.name
+  return result
+
+@router.put("/instalaciones/{instalacion_id}", response_model=InstalacionResponse)
+def update_instalacion(
+  instalacion_id: int,
+  instalacion: InstalacionUpdate,
+  db: Session = Depends(get_db),
+  current_user: User = Depends(get_current_active_user)
+):
+  """Update an existing instalacion"""
+  if instalacion.locacion_id:
+    locacion = crud.get_sector(db, sector_id=instalacion.locacion_id)
+    if not locacion:
+      raise HTTPException(status_code=404, detail="Locacion not found")
+
+  db_inst = crud.update_instalacion(db, instalacion_id=instalacion_id, instalacion=instalacion)
+  if not db_inst:
+    raise HTTPException(status_code=404, detail="Instalacion not found")
+
+  result = {
+    "id": db_inst.id,
+    "name": db_inst.name,
+    "locacion_id": db_inst.locacion_id,
+    "description": db_inst.description,
+    "created_at": db_inst.created_at,
+    "locacion_name": None
+  }
+  if db_inst.locacion_id:
+    locacion = crud.get_sector(db, sector_id=db_inst.locacion_id)
+    if locacion:
+      result["locacion_name"] = locacion.name
+  return result
+
+@router.delete("/instalaciones/{instalacion_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_instalacion(
+  instalacion_id: int,
+  db: Session = Depends(get_db),
+  current_user: User = Depends(get_current_active_user)
+):
+  """Delete an instalacion"""
+  if not crud.delete_instalacion(db, instalacion_id=instalacion_id):
+    raise HTTPException(status_code=404, detail="Instalacion not found")
+  return None
 
 # ========== SECTORS ==========
 # NOTE: Sector routes must be defined BEFORE /{location_id} to avoid route conflicts

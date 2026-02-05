@@ -28,6 +28,8 @@ def enrich_device(device, db: Session) -> dict:
     "hostname": device.hostname,
     "location_id": device.location_id,
     "sector_id": device.sector_id,
+    "instalacion_id": device.instalacion_id,
+    "detail": device.detail,
     "model": device.model,
     "brand": device.brand,
     "asset_type": device.asset_type,
@@ -47,6 +49,7 @@ def enrich_device(device, db: Session) -> dict:
     "subnet_name": None,
     "location_name": None,
     "sector_name": None,
+    "instalacion_name": None,
   }
 
   if device.asset_type:
@@ -73,6 +76,11 @@ def enrich_device(device, db: Session) -> dict:
     sector = crud.get_sector(db, device.sector_id)
     if sector:
       device_dict["sector_name"] = sector.name
+
+  if device.instalacion_id:
+    instalacion = crud.get_instalacion(db, device.instalacion_id)
+    if instalacion:
+      device_dict["instalacion_name"] = instalacion.name
 
   return device_dict
 

@@ -2,26 +2,29 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { locationService, sectorService } from "@/lib/services";
-import { Location, Sector, LocationCreate, LocationUpdate, SectorCreate, SectorUpdate } from "@/types";
+import { locationService, sectorService, instalacionService } from "@/lib/services";
+import { Location, Sector, LocationCreate, LocationUpdate, SectorCreate, SectorUpdate, Instalacion, InstalacionCreate, InstalacionUpdate } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, MapPin, Building } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Building, Warehouse } from "lucide-react";
 
 export default function LocationsSectorsPage() {
   const queryClient = useQueryClient();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showSectorModal, setShowSectorModal] = useState(false);
+  const [showInstalacionModal, setShowInstalacionModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
-  
+  const [selectedInstalacion, setSelectedInstalacion] = useState<Instalacion | null>(null);
+
   // Form states
   const [locationForm, setLocationForm] = useState<LocationCreate>({ name: "", description: "" });
   const [sectorForm, setSectorForm] = useState<SectorCreate>({ name: "", location_id: null, description: "" });
+  const [instalacionForm, setInstalacionForm] = useState<InstalacionCreate>({ name: "", locacion_id: null, description: "" });
 
   const { data: locations, isLoading: locationsLoading } = useQuery({
     queryKey: ["locations"],
@@ -33,6 +36,11 @@ export default function LocationsSectorsPage() {
     queryFn: () => sectorService.getSectors(),
   });
 
+  const { data: instalaciones, isLoading: instalacionesLoading } = useQuery({
+    queryKey: ["instalaciones"],
+    queryFn: () => instalacionService.getInstalaciones(),
+  });
+
   // Location mutations
   const createLocationMutation = useMutation({
     mutationFn: (location: LocationCreate) => locationService.createLocation(location),
@@ -41,7 +49,7 @@ export default function LocationsSectorsPage() {
       setSelectedLocation(null);
       setLocationForm({ name: "", description: "" });
       queryClient.invalidateQueries({ queryKey: ["locations"] });
-      queryClient.invalidateQueries({ queryKey: ["sectors"] }); // También invalidar sectores para mostrar sectores actualizados
+      queryClient.invalidateQueries({ queryKey: ["sectors"] });
     },
   });
 
@@ -53,7 +61,7 @@ export default function LocationsSectorsPage() {
       setSelectedLocation(null);
       setLocationForm({ name: "", description: "" });
       queryClient.invalidateQueries({ queryKey: ["locations"] });
-      queryClient.invalidateQueries({ queryKey: ["sectors"] }); // También invalidar sectores para mostrar sectores actualizados
+      queryClient.invalidateQueries({ queryKey: ["sectors"] });
     },
   });
 
@@ -65,7 +73,7 @@ export default function LocationsSectorsPage() {
     },
   });
 
-  // Sector mutations
+  // Sector mutations (now "Locaciones")
   const createSectorMutation = useMutation({
     mutationFn: (sector: SectorCreate) => sectorService.createSector(sector),
     onSuccess: () => {
@@ -73,6 +81,7 @@ export default function LocationsSectorsPage() {
       setSelectedSector(null);
       setSectorForm({ name: "", location_id: 0, description: "" });
       queryClient.invalidateQueries({ queryKey: ["sectors"] });
+      queryClient.invalidateQueries({ queryKey: ["instalaciones"] });
     },
   });
 
@@ -84,7 +93,8 @@ export default function LocationsSectorsPage() {
       setSelectedSector(null);
       setSectorForm({ name: "", location_id: null, description: "" });
       queryClient.invalidateQueries({ queryKey: ["sectors"] });
-      queryClient.invalidateQueries({ queryKey: ["locations"] }); // También invalidar locations para mostrar sectores actualizados
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
+      queryClient.invalidateQueries({ queryKey: ["instalaciones"] });
     },
   });
 
@@ -92,7 +102,37 @@ export default function LocationsSectorsPage() {
     mutationFn: (id: number) => sectorService.deleteSector(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sectors"] });
-      queryClient.invalidateQueries({ queryKey: ["locations"] }); // También invalidar locations para mostrar sectores actualizados
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
+      queryClient.invalidateQueries({ queryKey: ["instalaciones"] });
+    },
+  });
+
+  // Instalacion mutations
+  const createInstalacionMutation = useMutation({
+    mutationFn: (instalacion: InstalacionCreate) => instalacionService.createInstalacion(instalacion),
+    onSuccess: () => {
+      setShowInstalacionModal(false);
+      setSelectedInstalacion(null);
+      setInstalacionForm({ name: "", locacion_id: null, description: "" });
+      queryClient.invalidateQueries({ queryKey: ["instalaciones"] });
+    },
+  });
+
+  const updateInstalacionMutation = useMutation({
+    mutationFn: ({ id, instalacion }: { id: number; instalacion: InstalacionUpdate }) =>
+      instalacionService.updateInstalacion(id, instalacion),
+    onSuccess: () => {
+      setShowInstalacionModal(false);
+      setSelectedInstalacion(null);
+      setInstalacionForm({ name: "", locacion_id: null, description: "" });
+      queryClient.invalidateQueries({ queryKey: ["instalaciones"] });
+    },
+  });
+
+  const deleteInstalacionMutation = useMutation({
+    mutationFn: (id: number) => instalacionService.deleteInstalacion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["instalaciones"] });
     },
   });
 
@@ -112,7 +152,7 @@ export default function LocationsSectorsPage() {
   };
 
   const handleDeleteLocation = (id: number) => {
-    if (confirm("¿Estás seguro de eliminar esta ubicación? Se eliminarán todos los sectores asociados.")) {
+    if (confirm("¿Estás seguro de eliminar esta ubicación? Se eliminarán todas las locaciones asociadas.")) {
       deleteLocationMutation.mutate(id);
     }
   };
@@ -134,12 +174,34 @@ export default function LocationsSectorsPage() {
   };
 
   const handleDeleteSector = (id: number) => {
-    if (confirm("¿Estás seguro de eliminar este sector?")) {
+    if (confirm("¿Estás seguro de eliminar esta locación?")) {
       deleteSectorMutation.mutate(id);
     }
   };
 
-  if (locationsLoading || sectorsLoading) {
+  const handleCreateInstalacion = () => {
+    setSelectedInstalacion(null);
+    setInstalacionForm({ name: "", locacion_id: null, description: "" });
+    setShowInstalacionModal(true);
+  };
+
+  const handleEditInstalacion = (instalacion: Instalacion) => {
+    setSelectedInstalacion(instalacion);
+    setInstalacionForm({
+      name: instalacion.name,
+      locacion_id: instalacion.locacion_id || null,
+      description: instalacion.description || ""
+    });
+    setShowInstalacionModal(true);
+  };
+
+  const handleDeleteInstalacion = (id: number) => {
+    if (confirm("¿Estás seguro de eliminar esta instalación?")) {
+      deleteInstalacionMutation.mutate(id);
+    }
+  };
+
+  if (locationsLoading || sectorsLoading || instalacionesLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
@@ -148,7 +210,7 @@ export default function LocationsSectorsPage() {
       <div className="container mx-auto p-6">
         <div className="flex items-center gap-3 mb-6">
           <MapPin className="h-8 w-8" />
-          <h1 className="text-3xl font-bold">Ubicaciones y Sectores</h1>
+          <h1 className="text-3xl font-bold">Ubicaciones</h1>
         </div>
 
         <Tabs defaultValue="locations" className="space-y-6">
@@ -159,7 +221,11 @@ export default function LocationsSectorsPage() {
             </TabsTrigger>
             <TabsTrigger value="sectors" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
-              Sectores
+              Locaciones
+            </TabsTrigger>
+            <TabsTrigger value="instalaciones" className="flex items-center gap-2">
+              <Warehouse className="h-4 w-4" />
+              Instalaciones
             </TabsTrigger>
           </TabsList>
 
@@ -185,7 +251,7 @@ export default function LocationsSectorsPage() {
                     <TableRow>
                       <TableHead>Nombre</TableHead>
                       <TableHead>Descripción</TableHead>
-                      <TableHead>Sectores</TableHead>
+                      <TableHead>Locaciones</TableHead>
                       <TableHead>Creada</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
@@ -232,14 +298,14 @@ export default function LocationsSectorsPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Sectores</CardTitle>
+                    <CardTitle>Locaciones</CardTitle>
                     <CardDescription>
-                      Gestione los sectores dentro de cada ubicación.
+                      Gestione las locaciones dentro de cada ubicación.
                     </CardDescription>
                   </div>
                   <Button onClick={handleCreateSector}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Agregar Sector
+                    Agregar Locación
                   </Button>
                 </div>
               </CardHeader>
@@ -250,7 +316,8 @@ export default function LocationsSectorsPage() {
                       <TableHead>Nombre</TableHead>
                       <TableHead>Ubicación</TableHead>
                       <TableHead>Descripción</TableHead>
-                      <TableHead>Creado</TableHead>
+                      <TableHead>Instalaciones</TableHead>
+                      <TableHead>Creada</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -260,6 +327,9 @@ export default function LocationsSectorsPage() {
                         <TableCell className="font-medium">{sector.name}</TableCell>
                         <TableCell>{sector.location_name || "-"}</TableCell>
                         <TableCell>{sector.description || "-"}</TableCell>
+                        <TableCell>
+                          {instalaciones?.filter(i => i.locacion_id === sector.id).length || 0}
+                        </TableCell>
                         <TableCell>{new Date(sector.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
@@ -278,13 +348,78 @@ export default function LocationsSectorsPage() {
                 {sectors?.length === 0 && (
                   <div className="text-center py-12">
                     <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No hay sectores registrados.</p>
+                    <p className="text-muted-foreground">No hay locaciones registradas.</p>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Primero debe crear ubicaciones para poder agregar sectores.
+                      Primero debe crear ubicaciones para poder agregar locaciones.
                     </p>
                     <Button className="mt-4" onClick={handleCreateSector}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Agregar Primer Sector
+                      Agregar Primera Locación
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="instalaciones">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Instalaciones</CardTitle>
+                    <CardDescription>
+                      Gestione las instalaciones dentro de cada locación.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleCreateInstalacion}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agregar Instalación
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Locación</TableHead>
+                      <TableHead>Descripción</TableHead>
+                      <TableHead>Creada</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {instalaciones?.map((instalacion) => (
+                      <TableRow key={instalacion.id}>
+                        <TableCell className="font-medium">{instalacion.name}</TableCell>
+                        <TableCell>{instalacion.locacion_name || "-"}</TableCell>
+                        <TableCell>{instalacion.description || "-"}</TableCell>
+                        <TableCell>{new Date(instalacion.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button size="sm" variant="outline" onClick={() => handleEditInstalacion(instalacion)}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteInstalacion(instalacion.id)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {instalaciones?.length === 0 && (
+                  <div className="text-center py-12">
+                    <Warehouse className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No hay instalaciones registradas.</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Primero debe crear locaciones para poder agregar instalaciones.
+                    </p>
+                    <Button className="mt-4" onClick={handleCreateInstalacion}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Agregar Primera Instalación
                     </Button>
                   </div>
                 )}
@@ -339,12 +474,12 @@ export default function LocationsSectorsPage() {
           </div>
         )}
 
-        {/* Sector Modal */}
+        {/* Sector Modal (Locación) */}
         {showSectorModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
               <h2 className="text-xl font-bold mb-4">
-                {selectedSector ? "Editar Sector" : "Nuevo Sector"}
+                {selectedSector ? "Editar Locación" : "Nueva Locación"}
               </h2>
               <form onSubmit={(e) => {
                 e.preventDefault();
@@ -367,8 +502,8 @@ export default function LocationsSectorsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Ubicación *</label>
-                  <Select 
-                    value={sectorForm.location_id?.toString() || ""} 
+                  <Select
+                    value={sectorForm.location_id?.toString() || ""}
                     onValueChange={(value) => setSectorForm({ ...sectorForm, location_id: value ? parseInt(value) : null })}
                     required
                   >
@@ -397,6 +532,71 @@ export default function LocationsSectorsPage() {
                   </Button>
                   <Button type="submit" disabled={createSectorMutation.isPending || updateSectorMutation.isPending}>
                     {createSectorMutation.isPending || updateSectorMutation.isPending ? "Guardando..." : "Guardar"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Instalacion Modal */}
+        {showInstalacionModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
+              <h2 className="text-xl font-bold mb-4">
+                {selectedInstalacion ? "Editar Instalación" : "Nueva Instalación"}
+              </h2>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (selectedInstalacion) {
+                  updateInstalacionMutation.mutate({
+                    id: selectedInstalacion.id,
+                    instalacion: instalacionForm,
+                  });
+                } else {
+                  createInstalacionMutation.mutate(instalacionForm);
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Nombre *</label>
+                  <Input
+                    value={instalacionForm.name}
+                    onChange={(e) => setInstalacionForm({ ...instalacionForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Locación *</label>
+                  <Select
+                    value={instalacionForm.locacion_id?.toString() || ""}
+                    onValueChange={(value) => setInstalacionForm({ ...instalacionForm, locacion_id: value ? parseInt(value) : null })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar locación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sectors?.map((sector) => (
+                        <SelectItem key={sector.id} value={sector.id.toString()}>
+                          {sector.name} {sector.location_name ? `(${sector.location_name})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Descripción</label>
+                  <Input
+                    value={instalacionForm.description || ""}
+                    onChange={(e) => setInstalacionForm({ ...instalacionForm, description: e.target.value })}
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => setShowInstalacionModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={createInstalacionMutation.isPending || updateInstalacionMutation.isPending}>
+                    {createInstalacionMutation.isPending || updateInstalacionMutation.isPending ? "Guardando..." : "Guardar"}
                   </Button>
                 </div>
               </form>

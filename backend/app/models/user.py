@@ -57,12 +57,27 @@ class Sector(Base):
   # Relationships
   location = relationship("Location", backref="sectors")
 
+class Instalacion(Base):
+  __tablename__ = "instalaciones"
+
+  id = Column(Integer, primary_key=True, index=True)
+  name = Column(String(100), nullable=False)
+  locacion_id = Column(Integer, ForeignKey("sectors.id", ondelete="CASCADE"))
+  description = Column(String(500))
+  created_at = Column(DateTime, server_default=func.now())
+  updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+  # Relationships
+  locacion = relationship("Sector", backref="instalaciones")
+
 class Subnet(Base):
   __tablename__ = "subnets"
 
   id = Column(Integer, primary_key=True, index=True)
   name = Column(String(100), nullable=False)
   location = Column(String(100))
+  location_id = Column(Integer, ForeignKey("locations.id", ondelete="SET NULL"))
+  network_level_id = Column(Integer, ForeignKey("network_levels.id", ondelete="SET NULL"))
   subnet = Column(String(45), nullable=False)
   default_gateway = Column(String(45))
   netmask = Column(String(45))
@@ -70,6 +85,10 @@ class Subnet(Base):
   current_devices = Column(Integer, default=0)
   created_at = Column(DateTime, server_default=func.now())
   updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+  # Relationships
+  location_rel = relationship("Location", backref="subnets_rel")
+  network_level_rel = relationship("NetworkLevel", backref="subnets_rel")
 
 class Device(Base):
   __tablename__ = "devices"
@@ -80,6 +99,8 @@ class Device(Base):
   # Relaciones normalizadas
   location_id = Column(Integer, ForeignKey("locations.id", ondelete="SET NULL"))
   sector_id = Column(Integer, ForeignKey("sectors.id", ondelete="SET NULL"))
+  instalacion_id = Column(Integer, ForeignKey("instalaciones.id", ondelete="SET NULL"))
+  detail = Column(Text)
 
   # Campos para control de acceso a nivel de ubicación
   is_public = Column(Boolean, default=True)  # Visible para todos
@@ -100,6 +121,7 @@ class Device(Base):
   # Relationships
   location_rel = relationship("Location", backref="devices")
   sector_rel = relationship("Sector", backref="devices")
+  instalacion_rel = relationship("Instalacion", backref="devices")
   asset_type_rel = relationship("AssetType", backref="devices")
   network_level_rel = relationship("NetworkLevel", backref="devices")
   subnet_rel = relationship("Subnet", backref="devices")

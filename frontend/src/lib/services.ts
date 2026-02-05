@@ -1,5 +1,5 @@
 import api from "./api";
-import { User, Token, Device, DeviceCreate, DeviceUpdate, CredentialCreate, CredentialUpdate, Credential, AssetType, NetworkLevel, Subnet, SubnetCreate, SubnetUpdate, Location, LocationCreate, LocationUpdate, Sector, SectorCreate, SectorUpdate, DatabaseConfigResponse, DatabaseConfigUpdate, ConnectionTest, ImportPreview, ImportResponse, ExportResponse, AuditLog, SubnetIPInfo, FreeIP, IPValidationResponse, DevicePingResult, NetworkScanResponse, QuickAddDeviceRequest, Permission, Role, RoleCreate, RoleUpdate, UserWithRoles, UserPermissions, MyPermissions, Switch, SwitchCreate, SwitchUpdate, Vlan, VlanCreate, VlanUpdate, SwitchPort, SwitchPortCreate, SwitchPortUpdate } from "@/types";
+import { User, Token, Device, DeviceCreate, DeviceUpdate, CredentialCreate, CredentialUpdate, Credential, AssetType, NetworkLevel, Subnet, SubnetCreate, SubnetUpdate, Location, LocationCreate, LocationUpdate, Sector, SectorCreate, SectorUpdate, Instalacion, InstalacionCreate, InstalacionUpdate, DatabaseConfigResponse, DatabaseConfigUpdate, ConnectionTest, ImportPreview, ImportResponse, ExportResponse, AuditLog, SubnetIPInfo, FreeIP, IPValidationResponse, DevicePingResult, NetworkScanResponse, QuickAddDeviceRequest, Permission, Role, RoleCreate, RoleUpdate, UserWithRoles, UserPermissions, MyPermissions, Switch, SwitchCreate, SwitchUpdate, Vlan, VlanCreate, VlanUpdate, SwitchPort, SwitchPortCreate, SwitchPortUpdate } from "@/types";
 
 export const authService = {
   register: async (username: string, email: string, password: string, is_admin: boolean = false) => {
@@ -142,6 +142,11 @@ export const subnetService = {
 
   validateIP: async (id: number, ip_address: string) => {
     const response = await api.post<IPValidationResponse>(`/api/subnets/${id}/validate-ip`, { ip_address });
+    return response.data;
+  },
+
+  getSubnetsByLocation: async (locationId: number) => {
+    const response = await api.get<Subnet[]>(`/api/subnets/by-location/${locationId}`);
     return response.data;
   },
 };
@@ -292,6 +297,35 @@ export const sectorService = {
   deleteSector: async (id: number) => {
     await api.delete(`/api/locations/sectors/${id}`);
     },
+};
+
+export const instalacionService = {
+  getInstalaciones: async (locacionId?: number) => {
+    const url = locacionId
+      ? `/api/locations/instalaciones?locacion_id=${locacionId}`
+      : "/api/locations/instalaciones";
+    const response = await api.get<Instalacion[]>(url);
+    return response.data;
+  },
+
+  getInstalacion: async (id: number) => {
+    const response = await api.get<Instalacion>(`/api/locations/instalaciones/${id}`);
+    return response.data;
+  },
+
+  createInstalacion: async (instalacion: InstalacionCreate) => {
+    const response = await api.post<Instalacion>("/api/locations/instalaciones", instalacion);
+    return response.data;
+  },
+
+  updateInstalacion: async (id: number, instalacion: InstalacionUpdate) => {
+    const response = await api.put<Instalacion>(`/api/locations/instalaciones/${id}`, instalacion);
+    return response.data;
+  },
+
+  deleteInstalacion: async (id: number) => {
+    await api.delete(`/api/locations/instalaciones/${id}`);
+  },
 };
 
 export const importExportService = {

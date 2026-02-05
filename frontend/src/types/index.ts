@@ -26,10 +26,12 @@ export interface Device {
   id: number;
   name: string;
   hostname: string | null;
-  location: string | null;        // Campo antiguo (deprecado)
-  sector: string | null;            // Campo antiguo (deprecado)
-  location_id: number | null;        // Nueva relación
-  sector_id: number | null;          // Nueva relación
+  location: string | null;
+  sector: string | null;
+  location_id: number | null;
+  sector_id: number | null;
+  instalacion_id: number | null;
+  detail: string | null;
   model: string | null;
   brand: string | null;
   asset_type: number | null;
@@ -45,17 +47,18 @@ export interface Device {
   asset_type_name: string | null;
   network_level_name: string | null;
   subnet_name: string | null;
-  location_name?: string | null;    // Para el frontend
-  sector_name?: string | null;      // Para el frontend
+  location_name?: string | null;
+  sector_name?: string | null;
+  instalacion_name?: string | null;
 }
 
 export interface DeviceCreate {
   name: string;
   hostname?: string;
-  location?: string | null;
-  sector?: string | null;
   location_id?: number | null;
   sector_id?: number | null;
+  instalacion_id?: number | null;
+  detail?: string | null;
   model?: string | null;
   brand?: string | null;
   asset_type?: number | null;
@@ -70,10 +73,10 @@ export interface DeviceCreate {
 export interface DeviceUpdate {
   name?: string;
   hostname?: string | null;
-  location?: string | null;
-  sector?: string | null;
   location_id?: number | null;
   sector_id?: number | null;
+  instalacion_id?: number | null;
+  detail?: string | null;
   model?: string | null;
   brand?: string | null;
   asset_type?: number | null;
@@ -89,17 +92,23 @@ export interface Subnet {
   id: number;
   name: string;
   location: string;
+  location_id: number | null;
+  network_level_id: number | null;
   subnet: string;
   default_gateway: string;
   netmask: string;
   max_devices: number;
   current_devices: number;
   created_at: string;
+  location_name: string | null;
+  network_level_name: string | null;
 }
 
 export interface SubnetCreate {
   name: string;
-  location: string;
+  location?: string;
+  location_id?: number | null;
+  network_level_id?: number | null;
   subnet: string;
   default_gateway: string;
   netmask: string;
@@ -109,6 +118,8 @@ export interface SubnetCreate {
 export interface SubnetUpdate {
   name?: string;
   location?: string;
+  location_id?: number | null;
+  network_level_id?: number | null;
   subnet?: string;
   default_gateway?: string;
   netmask?: string;
@@ -164,6 +175,27 @@ export interface SectorCreate {
 export interface SectorUpdate {
   name?: string;
   location_id?: number | null;
+  description?: string;
+}
+
+export interface Instalacion {
+  id: number;
+  name: string;
+  locacion_id: number;
+  description: string | null;
+  created_at: string;
+  locacion_name?: string | null;
+}
+
+export interface InstalacionCreate {
+  name: string;
+  locacion_id: number | null;
+  description?: string;
+}
+
+export interface InstalacionUpdate {
+  name?: string;
+  locacion_id?: number | null;
   description?: string;
 }
 
